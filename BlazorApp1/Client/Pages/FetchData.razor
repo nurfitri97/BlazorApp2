@@ -1,0 +1,94 @@
+﻿@page "/fetchdata"
+@using BlazorApp1.Shared
+@inject HttpClient Http
+
+<PageTitle>Weather forecast</PageTitle>
+
+<h1>Weather forecast</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+@if (SenaraiCalon == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    //total undi = [3,0,0,0,0,1,0,77]
+    int[] TotalMenang = new int [100];
+    int[] TotalUndi = new int [100];
+
+
+    @foreach (var parliment in SenaraiCalon.Where(j => j.kt == "parlimen").OrderBy(k => k.kid).Select(j => j.kid).Distinct())
+    {
+        List<Calon> SenaraiCalonDalamParlimen = SenaraiCalon.Where(h => h.kid == parliment).ToList();
+        SenaraiCalonDalamParlimen.Add(
+        new Calon()
+        {
+            t = "PN + BN",
+            pid = 99,
+            ju = SenaraiCalonDalamParlimen.Where(j => j.pid == 1 || j.pid == 27 || j.pid == 2).Sum(j => j.ju)
+        });
+        <h3>P @parliment.Substring(0,3)</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nama</th>
+                    <th>Parti</th>
+                    <th>Jumlah Undi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var calon in SenaraiCalonDalamParlimen)
+                {
+                    string warna = "";
+                    if(calon.ju >= SenaraiCalonDalamParlimen.Select(j => j.ju).Max())
+                    {
+                        warna = calon.ColorWinner;
+                        TotalUndi[calon.pid] += calon.ju;
+                        TotalMenang[calon.pid]++;
+                    }
+                    <tr style="background-color:@warna">
+                        <td>@calon.t</td>
+                        <td>@calon.PartyName</td>
+                        <td>@calon.ju</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    for(int i = 0; i <= 99; i++)
+    {
+        if (TotalMenang[i] == 0) 
+        {
+            continue;
+        }
+        else
+        {
+            <h5>
+            @if(i == 99)
+            {
+                    <span>PN + BN </span>
+            }
+            else
+            {
+                @SenaraiCalon.FirstOrDefault(j => j.pid == i)?.PartyName <span>::</span>
+            }
+            @TotalMenang[i] --- --- --  @TotalUndi[i]
+            </h5>
+        }
+
+    }
+
+
+}
+
+@code {
+    private Calon[]? SenaraiCalon;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SenaraiCalon = await Http.GetFromJsonAsync<Calon[]>("WeatherForecast");
+    }
+}
